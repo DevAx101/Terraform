@@ -7,9 +7,10 @@
   // "image": "docker.io/nnthanh101/terraform:latest",
   "image": "docker.io/nnthanh101/terraform:devops",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  // "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
   "mounts": [
-    "source=${localEnv:HOME}/.aws,target=/workspaces/${localWorkspaceFolderBasename}/.aws,type=bind,readonly",
+    // "source=${localWorkspaceFolder},target=/workspace,type=bind",  // ✅ Unified mount for workspace
+    "source=${localEnv:HOME}/.aws,target=/workspaces/${localWorkspaceFolderBasename}/.aws,type=bind,readonly" // ✅ Read-only AWS credentials
     // "source=${localEnv:HOME}/.kube/config,target=/workspaces/${localWorkspaceFolderBasename}/.kube/config,type=bind,readonly"
   ],
   
