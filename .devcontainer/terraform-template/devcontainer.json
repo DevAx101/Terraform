@@ -1,0 +1,104 @@
+// For format details, see https://aka.ms/devcontainer.json
+// For config options, see https://containers.dev/templates
+
+{
+  "name": "Terraform-AWS: DevOps Accelerator for Multi-Cloud Infrastructure using Wolfi Nginx with Node.js, Go, Terraform, CDK, AWS CLI, Azure CLI.",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  // "image": "docker.io/nnthanh101/terraform:latest",
+  "image": "docker.io/nnthanh101/terraform:devops",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "mounts": [
+    "source=${localEnv:HOME}/.aws,target=/workspaces/${localWorkspaceFolderBasename}/.aws,type=bind,readonly",
+    // "source=${localEnv:HOME}/.kube/config,target=/workspaces/${localWorkspaceFolderBasename}/.kube/config,type=bind,readonly"
+  ],
+  
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [
+    5000,
+    // 8080,
+  ],
+  "portsAttributes": {
+    "5000": {
+      "label": "Docusaurus",
+      "requireLocalPort": true,
+      "onAutoForward": "openBrowser"
+    },
+    // "8080": {
+    //   "label": "Nginx",
+    //   "requireLocalPort": true,
+    //   // "onAutoForward": "notify",
+    //   // "onAutoForward": "ignore"
+    //   "onAutoForward": "openBrowser"
+    // },
+  },
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "cp ~/taskfile/Taskfile.yaml . && task",
+  "postCreateCommand": "task -d ~",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // "ms-python.python",
+        // "ms-python.vscode-pylance",
+        // "ms-toolsai.jupyter",
+        // "ms-toolsai.jupyter-keymap",
+        // "ms-toolsai.jupyter-renderers",
+        "task.vscode-task",
+        "redhat.vscode-yaml",
+        "HashiCorp.terraform",
+        // "ms-vscode-remote.remote-containers",
+        // "ms-kubernetes-tools.vscode-kubernetes-tools"
+        // "yy0931.vscode-sqlite3-editor",
+        // "ms-ossdata.vscode-postgresql",
+        // "mtxr.sqltools-driver-sqlite",
+        // "mtxr.sqltools-driver-pg",
+        // "ms-azuretools.vscode-docker",
+        "AmazonWebServices.aws-toolkit-vscode",
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        // "terminal.integrated.profiles.linux": {
+        //   "bash": {
+        //     "path": "/bin/bash"
+        //   }
+        // },
+        // "python.pythonPath": "/usr/local/bin/python3",
+        // "[python]": {
+        //   "editor.defaultFormatter": "ms-python.vscode-pylance",
+        //   "editor.formatOnType": true,
+        //   "editor.formatOnSave": true
+        // },
+        // "files.autoSave": "afterDelay",
+        // "files.autoSaveDelay": 1000,
+        // "[jupyter]": {
+        //   "themeMatplotlibPlots": true,
+        //   "widgetScriptSources": [
+        //     "unpkg.com",
+        //     "jsdelivr.com"
+        //   ]
+      },
+      // "sqltools.connections": [
+      //   {
+      //     "name": "Container Database",
+      //     "driver": "PostgreSQL",
+      //     "previewLimit": 50,
+      //     "server": "localhost",
+      //     "port": 5432,
+      //     "database": "xopsdb",
+      //     "username": "xopsuser",
+      //     "password": "xopspassword"
+      //   }
+      // ],
+    }
+  },
+  // Uncomment to connect as root (instead of os). More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+  "remoteUser": "os"
+}
