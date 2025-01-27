@@ -70,7 +70,7 @@ variables {
               provider = "S3"
               version  = "1"
               configuration = {
-                S3Bucket = "git-module-aws-tf-cicd-<YOUR-AWS-ACCOUNT-ID>"
+                S3Bucket = "git-terraform-aws-cicd-<YOUR-AWS-ACCOUNT-ID>"
                 S3ObjectKey = "archive.zip"
                 PollForSourceChanges = false
               }
@@ -196,7 +196,7 @@ run "input_validation" {
                 provider = "S3"
                 version  = "1"
                 configuration = {
-                  S3Bucket = "git-module-aws-tf-cicd-<YOUR-AWS-ACCOUNT-ID>"
+                  S3Bucket = "git-terraform-aws-cicd-<YOUR-AWS-ACCOUNT-ID>"
                   S3ObjectKey = "archive.zip"
                   PollForSourceChanges = false
                 }
