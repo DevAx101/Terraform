@@ -1,0 +1,11 @@
+## Terraform Test
+version: 0.1
+phases:
+  pre_build:
+    commands:
+      - terraform init
+      - terraform validate
+
+  build:
+    commands:
+      - terraform test

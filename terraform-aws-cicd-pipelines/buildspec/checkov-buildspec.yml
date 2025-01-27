@@ -1,0 +1,15 @@
+## Checkov
+version: 0.1
+phases:
+  pre_build:
+    commands:
+      - echo pre_build starting
+
+  build:
+    commands:
+      - echo build starting
+      - echo starting checkov
+      - ls
+      - checkov -d .
+      - echo saving checkov output
+      - checkov -s -d ./ > checkov.result.txt
