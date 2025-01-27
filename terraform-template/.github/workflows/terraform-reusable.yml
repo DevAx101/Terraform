@@ -1,0 +1,163 @@
+name: Terraform Reusable
+
+permissions:
+  id-token: write ## This is required for requesting the JWT
+  contents: read ## This is required for actions/checkout
+  pull-requests: write ## This is required to add comments to Pull Requests
+  deployments: write ## This is required to deactivate deployments
+
+on:
+  workflow_call:
+    inputs:
+      deploy: ## true = 'terraform apply' false = 'terraform destroy'
+        required: true
+        type: boolean
+      tf-version:
+        required: true
+        type: string
+      tf-organization:
+        required: true
+        type: string
+      tf-hostname:
+        required: true
+        type: string
+      tf-workspace:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+      local-execution-mode:
+        required: false
+        type: boolean
+      setup-python:
+        required: false
+        type: boolean
+      python-version:
+        required: false
+        type: string
+    secrets:
+      tf-token:
+        required: true
+      terraform-execution-iam-plan-role-arn:
+        required: false
+      terraform-execution-iam-apply-role-arn:
+        required: false
+      extra-args:
+        required: false
+
+concurrency:
+  group: ${{ inputs.environment }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TF_CLOUD_ORGANIZATION: ${{ inputs.tf-organization}}
+  TF_CLOUD_HOSTNAME: ${{ inputs.tf-hostname }}
+  TF_WORKSPACE: ${{ inputs.tf-workspace }}
+  ## For Terraform Enterprise, change the domain name in the TF_TOKEN_app_terraform_io variable
+  ## like documented in https://developer.hashicorp.com/terraform/cli/config/config-file#environment-variable-credentials
+  TF_TOKEN_app_terraform_io: ${{ secrets.tf-token }}
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    outputs:
+      exitcode: ${{ steps.plan.outputs.exitcode }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Checkout composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: nnthanh101/devops
+          ref: ${{ inputs.ref }}
+          path: composite
+      - name: Terraform Init
+        id: init
+        uses: ./composite/.github/actions/terraform-init
+        with:
+          tf-version: ${{ inputs.tf-version }}
+          aws-region: ${{ inputs.aws-region }}
+          terraform-wrapper: true
+          local-execution-mode: ${{ inputs.local-execution-mode }}
+          terraform-execution-iam-role-arn: ${{ secrets.terraform-execution-iam-plan-role-arn }}
+          setup-python: ${{ inputs.setup-python }}
+          python-version: ${{ inputs.python-version }}
+      - name: Terraform Plan
+        id: plan
+        uses: ./composite/.github/actions/terraform-plan
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy: ${{ inputs.deploy }}
+          aws-region: ${{ inputs.aws-region }}
+          environment: ${{ inputs.environment }}
+          init-outcome: ${{ steps.init.outputs.outcome }}
+          extra-args: ${{ secrets.extra-args }}
+  terraform-apply:
+    needs: [terraform-plan]
+    name: Terraform Apply
+    if: (github.ref_name == 'main' && needs.terraform-plan.outputs.exitcode == 2)
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Checkout composite actions
+        uses: actions/checkout@v4
+        with:
+          repository: nnthanh101/devops
+          ref: ${{ inputs.ref }}
+          path: composite
+      - name: Terraform Init
+        id: init
+        uses: ./composite/.github/actions/terraform-init
+        with:
+          tf-version: ${{ inputs.tf-version }}
+          aws-region: ${{ inputs.aws-region }}
+          terraform-wrapper: false
+          local-execution-mode: ${{ inputs.local-execution-mode }}
+          terraform-execution-iam-role-arn: ${{ secrets.terraform-execution-iam-apply-role-arn }}
+          setup-python: ${{ inputs.setup-python }}
+          python-version: ${{ inputs.python-version }}
+      - name: Define Terraform Apply Command # 'terraform apply' or 'terraform destroy'
+        id: tf_apply_command
+        run: |
+          if ${{ inputs.deploy }}
+          then
+            echo "APPLY_COMMAND=terraform apply" >> $GITHUB_OUTPUT
+          else
+            echo "APPLY_COMMAND=terraform destroy" >> $GITHUB_OUTPUT
+          fi
+      - name: Terraform Apply
+        run: |
+          ${{ steps.tf_apply_command.outputs.APPLY_COMMAND }} \
+            -var-file=envs/${{ inputs.environment }}/terraform.tfvars \
+            -var="region=${{ inputs.aws-region }}" \
+            -var="environment=${{ inputs.environment }}" \
+            -auto-approve \
+            -input=false \
+            ${{ secrets.extra-args }}
+
+  deactivate-deployment:
+    needs: [terraform-apply]
+    if: ${{ ! inputs.deploy }}
+    name: Deactivate Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: strumwolf/delete-deployment-environment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: ${{ inputs.environment }}
+          onlyDeactivateDeployments: true

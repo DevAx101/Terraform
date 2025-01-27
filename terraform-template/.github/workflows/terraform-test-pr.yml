@@ -1,0 +1,52 @@
+name: Terraform Test PR
+
+permissions:
+  contents: read ## This is required for actions/checkout
+  deployments: write ## This is required to deactivate deployments
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: terraform-test
+  cancel-in-progress: false
+
+jobs:
+  test-deploy:
+    name: Test Deployment
+    runs-on: ubuntu-latest
+    if: ${{ ! github.event.pull_request.draft }}
+    defaults:
+      run:
+        shell: bash
+    environment:
+      name: PR-${{ github.event.number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Terraform Init
+        run: terraform init
+        env:
+          TF_CLOUD_ORGANIZATION: ${{ vars.TF_ORGANIZATION }}
+          TF_CLOUD_HOSTNAME: ${{ vars.TF_HOSTNAME }}
+          TF_WORKSPACE: ${{ vars.APP_NAME }}-terraform-test
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN }}
+      - name: Terraform test
+        run: terraform test
+  deactivate-deployment:
+    needs: [test-deploy]
+    name: Deactivate deployment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: strumwolf/delete-deployment-environment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: pr-${{ github.event.number }}
+          onlyDeactivateDeployments: true

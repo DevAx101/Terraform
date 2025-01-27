@@ -1,0 +1,53 @@
+name: "Terraform-AWS Init"
+description: "Terraform Init Composite Action"
+inputs:
+  tf-version:
+    required: true
+    description: "Terraform Version"
+  aws-region:
+    required: true
+    description: "AWS Region"
+  terraform-wrapper:
+    required: true
+    description: "Terraform Wrapper"
+  local-execution-mode:
+    required: false
+    description: "Terraform Cloud/Enterprise Workspace Local Execution Mode flag"
+  terraform-execution-iam-role-arn:
+    required: false
+    description: "Terraform Execution IAM Role ARN"
+  setup-python:
+    required: false
+    description: "Python Setup flag"
+  python-version:
+    required: false
+    description: "Python Version"
+outputs:
+  outcome:
+    description: "Terraform init command outcome"
+    value: ${{ steps.init.outcome }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.tf-version }}
+        terraform_wrapper: ${{ inputs.terraform-wrapper }}
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      if: ${{ inputs.local-execution-mode == 'true' }}
+      with:
+        role-to-assume: ${{ inputs.terraform-execution-iam-role-arn }}
+        role-session-name: terraform-execution-role
+        aws-region: ${{ inputs.aws-region }}
+        role-duration-seconds: 1200
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      if: ${{ inputs.setup-python == 'true' }}
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Terraform Init
+      id: init
+      shell: bash
+      run: terraform init
